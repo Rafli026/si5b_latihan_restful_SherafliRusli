@@ -1,10 +1,37 @@
+require("dotenv").config();
 const express = require("express");
+const cors = require("cors");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware untuk membaca JSON
+// Middleware CORS
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN || "*"
+  })
+);
+
+// Middleware Body Parser (JSON)
 app.use(express.json());
+
+// Middleware Logger Kustom
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
+
+// Middleware Proteksi API Key
+const apiKeyMiddleware = (req, res, next) => {
+  const apiKey = req.headers["x-api-key"];
+  if (!apiKey || apiKey !== process.env.API_KEY) {
+    return res.status(401).json({
+      status: "error",
+      message: "Akses ditolak: API Key tidak valid atau tidak ditemukan"
+    });
+  }
+  next();
+};
 
 // Data sementara mahasiswa
 let mahasiswa = [
@@ -22,9 +49,7 @@ let mahasiswa = [
   }
 ];
 
-// ==========================================
 // ROUTE UTAMA
-// ==========================================
 app.get("/", (req, res) => {
   res.json({
     message: "RESTful API SI5B berhasil dijalankan!",
@@ -32,9 +57,7 @@ app.get("/", (req, res) => {
   });
 });
 
-// ==========================================
 // GET - Semua mahasiswa
-// ==========================================
 app.get("/api/mahasiswa", (req, res) => {
   res.json({
     status: "success",
@@ -42,12 +65,9 @@ app.get("/api/mahasiswa", (req, res) => {
   });
 });
 
-// ==========================================
 // GET - Mahasiswa berdasarkan ID
-// ==========================================
 app.get("/api/mahasiswa/:id", (req, res) => {
   const id = parseInt(req.params.id);
-
   const data = mahasiswa.find((mhs) => mhs.id === id);
 
   if (!data) {
@@ -63,16 +83,12 @@ app.get("/api/mahasiswa/:id", (req, res) => {
   });
 });
 
-// ==========================================
 // POST - Menambahkan mahasiswa
-// ==========================================
-app.post("/api/mahasiswa", (req, res) => {
+app.post("/api/mahasiswa", apiKeyMiddleware, (req, res) => {
   const { nama, nim, jurusan } = req.body;
 
   const dataBaru = {
-    id: mahasiswa.length > 0
-      ? mahasiswa[mahasiswa.length - 1].id + 1
-      : 1,
+    id: mahasiswa.length > 0 ? mahasiswa[mahasiswa.length - 1].id + 1 : 1,
     nama,
     nim,
     jurusan
@@ -87,12 +103,9 @@ app.post("/api/mahasiswa", (req, res) => {
   });
 });
 
-// ==========================================
 // PUT - Mengubah mahasiswa
-// ==========================================
-app.put("/api/mahasiswa/:id", (req, res) => {
+app.put("/api/mahasiswa/:id", apiKeyMiddleware, (req, res) => {
   const id = parseInt(req.params.id);
-
   const index = mahasiswa.findIndex((mhs) => mhs.id === id);
 
   if (index === -1) {
@@ -106,9 +119,9 @@ app.put("/api/mahasiswa/:id", (req, res) => {
 
   mahasiswa[index] = {
     id: id,
-    nama: nama,
-    nim: nim,
-    jurusan: jurusan
+    nama: nama || mahasiswa[index].nama,
+    nim: nim || mahasiswa[index].nim,
+    jurusan: jurusan || mahasiswa[index].jurusan
   };
 
   res.json({
@@ -118,12 +131,9 @@ app.put("/api/mahasiswa/:id", (req, res) => {
   });
 });
 
-// ==========================================
 // DELETE - Menghapus mahasiswa
-// ==========================================
-app.delete("/api/mahasiswa/:id", (req, res) => {
+app.delete("/api/mahasiswa/:id", apiKeyMiddleware, (req, res) => {
   const id = parseInt(req.params.id);
-
   const index = mahasiswa.findIndex((mhs) => mhs.id === id);
 
   if (index === -1) {
@@ -141,12 +151,11 @@ app.delete("/api/mahasiswa/:id", (req, res) => {
   });
 });
 
-
-// ==========================================
 // MENJALANKAN SERVER
-// ==========================================
-app.listen(PORT, () => {
-  console.log(`Server berjalan di http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== "production") {
+  app.listen(PORT, () => {
+    console.log(`Server berjalan di http://localhost:${PORT}`);
+  });
+}
 
 module.exports = app;
