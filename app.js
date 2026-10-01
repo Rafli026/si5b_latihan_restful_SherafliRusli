@@ -83,7 +83,7 @@ app.get("/api/mahasiswa/:id", (req, res) => {
   });
 });
 
-// POST - Menambahkan mahasiswa
+// POST - Menambahkan mahasiswa (Diproteksi API Key)
 app.post("/api/mahasiswa", apiKeyMiddleware, (req, res) => {
   const { nama, nim, jurusan } = req.body;
 
@@ -103,7 +103,7 @@ app.post("/api/mahasiswa", apiKeyMiddleware, (req, res) => {
   });
 });
 
-// PUT - Mengubah mahasiswa
+// PUT - Mengubah mahasiswa (Diproteksi API Key)
 app.put("/api/mahasiswa/:id", apiKeyMiddleware, (req, res) => {
   const id = parseInt(req.params.id);
   const index = mahasiswa.findIndex((mhs) => mhs.id === id);
@@ -131,7 +131,7 @@ app.put("/api/mahasiswa/:id", apiKeyMiddleware, (req, res) => {
   });
 });
 
-// DELETE - Menghapus mahasiswa
+// DELETE - Menghapus mahasiswa (Diproteksi API Key)
 app.delete("/api/mahasiswa/:id", apiKeyMiddleware, (req, res) => {
   const id = parseInt(req.params.id);
   const index = mahasiswa.findIndex((mhs) => mhs.id === id);
